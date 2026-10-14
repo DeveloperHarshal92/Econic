@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: ecommerce-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: ecommerce
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: ecommerce-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: ecommerce-api-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      API_PORT: 4000
+      MONGODB_URI: mongodb://mongodb:27017/ecommerce
+      REDIS_URL: redis://redis:6379
+      SHELL_URL: http://localhost:3000
+      CATALOG_URL: http://localhost:3001
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+
+  catalog:
+    build:
+      context: .
+      dockerfile: packages/catalog/Dockerfile
+    container_name: ecommerce-catalog
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      API_URL: http://api-gateway:4000
+    networks:
+      - ecommerce-network
+
+  cart:
+    build:
+      context: .
+      dockerfile: packages/cart/Dockerfile
+    container_name: ecommerce-cart
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      API_URL: http://api-gateway:4000
+    networks:
+      - ecommerce-network
+
+  checkout:
+    build:
+      context: .
+      dockerfile: packages/checkout/Dockerfile
+    container_name: ecommerce-checkout
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      API_URL: http://api-gateway:4000
+    networks:
+      - ecommerce-network
+
+  shell:
+    build:
+      context: .
+      dockerfile: packages/shell/Dockerfile
+    container_name: ecommerce-shell
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      CATALOG_URL: http://localhost:3001
+      CART_URL: http://localhost:3002
+      CHECKOUT_URL: http://localhost:3003
+      API_URL: http://api-gateway:4000
+    depends_on:
+      - catalog
+      - cart
+      - checkout
+      - api-gateway
+    networks:
+      - ecommerce-network
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  ecommerce-network:
+    driver: bridge

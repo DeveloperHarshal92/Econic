@@ -1,0 +1,32 @@
+{
+  "name": "ecommerce-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Headless Micro-Frontend E-Commerce Platform",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=services/api-gateway",
+    "dev:shell": "npm run dev --workspace=packages/shell",
+    "dev:catalog": "npm run dev --workspace=packages/catalog",
+    "dev:cart": "npm run dev --workspace=packages/cart",
+    "dev:checkout": "npm run dev --workspace=packages/checkout",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:api": "npm run build --workspace=services/api-gateway",
+    "build:shell": "npm run build --workspace=packages/shell",
+    "build:catalog": "npm run build --workspace=packages/catalog",
+    "build:cart": "npm run build --workspace=packages/cart",
+    "build:checkout": "npm run build --workspace=packages/checkout",
+    "test": "npm run test --workspaces --if-present",
+    "test:api": "npm run test --workspace=services/api-gateway",
+    "lint": "npm run lint --workspaces --if-present",
+    "seed": "npm run seed --workspace=services/api-gateway",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

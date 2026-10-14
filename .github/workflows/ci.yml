@@ -1,0 +1,102 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  lint-and-test:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build shared package
+        run: npm run build:shared
+
+      - name: Lint and type-check
+        run: npm run lint
+
+      - name: Run API Gateway tests
+        run: npm run test:api
+        env:
+          MONGODB_URI: mongodb://localhost:27017/ecommerce_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-ci-secret
+
+      - name: Build Webpack frontend bundles
+        run: |
+          npm run build:shell
+          npm run build:catalog
+          npm run build:cart
+          npm run build:checkout
+
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API Gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/api-gateway/Dockerfile
+          push: false
+
+      - name: Build Catalog MFE image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packages/catalog/Dockerfile
+          push: false
+
+      - name: Build Cart MFE image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packages/cart/Dockerfile
+          push: false
+
+      - name: Build Checkout MFE image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packages/checkout/Dockerfile
+          push: false
+
+      - name: Build Shell image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packages/shell/Dockerfile
+          push: false
