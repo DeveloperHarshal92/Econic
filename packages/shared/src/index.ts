@@ -90,8 +90,19 @@ export interface ShippingAddress {
   phone?: string;
 }
 
+export interface PaymentDetails {
+  provider: 'razorpay' | 'stripe';
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  currency?: string;
+  amountPaise?: number;
+  paymentIntentId?: string;
+  clientSecret?: string;
+}
+
 export interface Order {
   id: string;
+  orderNumber?: string;
   items: OrderItem[];
   shippingAddress: ShippingAddress;
   subtotal: number;
@@ -101,6 +112,7 @@ export interface Order {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentIntentId?: string;
+  paymentDetails?: PaymentDetails;
   createdAt: string;
   updatedAt: string;
 }

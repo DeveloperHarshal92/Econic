@@ -6,39 +6,49 @@
 /* ─── CSS Custom Properties (Design Tokens) ────────────── */
 
 :root {
-  /* Brand Colors */
-  --color-primary: #1a1a2e;
-  --color-primary-light: #16213e;
-  --color-primary-dark: #0f0f1a;
-  --color-accent: #e94560;
-  --color-accent-hover: #d63851;
-  --color-accent-light: #ff6b81;
-  --color-secondary: #533483;
+  /* Brand Colors - VÊTU Design Specification */
+  --color-forest: #12372B;
+  --color-deep-green: #0B241B;
+  --color-ivory: #F7F5F0;
+  --color-white: #FFFFFF;
+  --color-charcoal: #1D211E;
+  --color-muted-olive: #737B61;
+  --color-warm-taupe: #C9BBA7;
+  --color-text-secondary: #77766F;
+  --color-border: #E5E1D8;
+  --color-border-subtle: #EFECE6;
 
-  /* Neutrals */
-  --color-bg: #0f0f1a;
-  --color-bg-elevated: #1a1a2e;
-  --color-bg-card: #16213e;
-  --color-bg-hover: #1f2b47;
-  --color-surface: rgba(255, 255, 255, 0.03);
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.15);
+  /* Semantic Aliases */
+  --color-primary: #12372B;
+  --color-primary-light: #1E5040;
+  --color-primary-dark: #0B241B;
+  --color-accent: #12372B;
+  --color-accent-hover: #0B241B;
+  --color-accent-light: #737B61;
+  --color-secondary: #737B61;
+
+  /* Surfaces & Backgrounds */
+  --color-bg: #F7F5F0;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-hover: #F0ECE4;
+  --color-surface: #FFFFFF;
+  --color-border-hover: #D5D0C5;
 
   /* Text */
-  --color-text: #e8e8f0;
-  --color-text-secondary: #a0a0b8;
-  --color-text-muted: #6b6b80;
-  --color-text-inverse: #0f0f1a;
+  --color-text: #1D211E;
+  --color-text-muted: #77766F;
+  --color-text-inverse: #FFFFFF;
 
   /* Status */
-  --color-success: #2ecc71;
-  --color-warning: #f39c12;
-  --color-error: #e74c3c;
-  --color-info: #3498db;
+  --color-success: #2E7D32;
+  --color-warning: #C27D00;
+  --color-error: #B71C1C;
+  --color-info: #1565C0;
 
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'DM Serif Display', 'Cormorant Garamond', Georgia, serif;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -46,9 +56,9 @@
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --text-4xl: 2.25rem;
-  --text-5xl: 3rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.75rem;
+  --text-5xl: 3.75rem;
 
   --weight-light: 300;
   --weight-normal: 400;
@@ -56,7 +66,7 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  --leading-tight: 1.2;
+  --leading-tight: 1.15;
   --leading-normal: 1.5;
   --leading-relaxed: 1.7;
 
@@ -74,27 +84,33 @@
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Border Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+  /* Border Radius - Restrained as per DESIGN.md */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
-  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(233, 69, 96, 0.15);
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+  /* Shadows - Minimal and soft */
+  --shadow-sm: 0 1px 3px rgba(29, 33, 30, 0.05);
+  --shadow-md: 0 4px 12px rgba(29, 33, 30, 0.06);
+  --shadow-lg: 0 8px 24px rgba(29, 33, 30, 0.08);
+  --shadow-xl: 0 16px 40px rgba(29, 33, 30, 0.1);
+  --shadow-card: 0 2px 8px rgba(29, 33, 30, 0.04);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ─── VÊTU Motion Design Tokens (Direction A: Minimal Editorial Luxury) ─── */
+  --vetu-motion-duration-fast: 200ms;       /* Short micro-interactions: swatches, buttons, focus */
+  --vetu-motion-duration-reveal: 600ms;     /* Standard scroll entrances: section & card reveals */
+  --vetu-motion-duration-hover: 750ms;      /* Restrained luxury image hover zoom */
+  --vetu-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);      /* Smooth deceleration for entrances */
+  --vetu-motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);  /* Symmetrical ease for imagery */
 
   /* Z-index */
   --z-dropdown: 100;
@@ -104,8 +120,10 @@
   --z-toast: 500;
 
   /* Layout */
-  --max-width: 1280px;
-  --header-height: 72px;
+  --max-width: 1360px;
+  --header-height: 76px;
+  --announcement-height: 28px;
+  --header-total-height: 104px;
 }
 
 /* ─── Reset & Base ─────────────────────────────────────── */
@@ -303,11 +321,29 @@ ul, ol {
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--color-bg-card) 25%,
-    var(--color-bg-hover) 50%,
-    var(--color-bg-card) 75%
+    #ECE8DE 25%,
+    #DFD9CC 50%,
+    #ECE8DE 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --vetu-motion-duration-fast: 0.01ms;
+    --vetu-motion-duration-reveal: 0.01ms;
+    --vetu-motion-duration-hover: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

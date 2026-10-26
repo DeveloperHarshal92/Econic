@@ -16,6 +16,11 @@ export type PaymentStatus =
   | 'failed'
   | 'refunded';
 
+export type FulfillmentStatus =
+  | 'unfulfilled'
+  | 'fulfilled'
+  | 'insufficient_stock_review_required';
+
 export interface IOrderItem {
   productId: string;
   variantSku: string;
@@ -48,8 +53,14 @@ export interface IOrder extends Document {
   total: number;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  fulfillmentStatus?: FulfillmentStatus;
   paymentDetails: {
-    provider: 'stripe';
+    provider: 'razorpay' | 'stripe';
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+    currency?: string;
+    amountPaise?: number;
     paymentIntentId?: string;
     clientSecret?: string;
   };
@@ -121,8 +132,19 @@ const OrderSchema = new Schema<IOrder>(
       default: 'pending',
       index: true,
     },
+    fulfillmentStatus: {
+      type: String,
+      enum: ['unfulfilled', 'fulfilled', 'insufficient_stock_review_required'],
+      default: 'unfulfilled',
+      index: true,
+    },
     paymentDetails: {
-      provider: { type: String, default: 'stripe' },
+      provider: { type: String, default: 'razorpay' },
+      razorpayOrderId: { type: String, index: true, sparse: true },
+      razorpayPaymentId: { type: String, index: true, sparse: true },
+      razorpaySignature: { type: String },
+      currency: { type: String, default: 'INR' },
+      amountPaise: { type: Number },
       paymentIntentId: { type: String, index: true, sparse: true },
       clientSecret: { type: String },
     },

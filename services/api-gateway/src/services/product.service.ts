@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { ProductModel, IProduct } from '../models';
 import { AppError } from '../middleware';
 import { logger } from '../utils/logger';
@@ -98,9 +99,20 @@ export class ProductService {
 
   /**
    * Get a product by ID.
+   * By default, public queries filter out inactive products (isActive: true).
+   * Authorized administrative callers can specify includeInactive = true.
    */
-  async getProductById(id: string): Promise<IProduct> {
-    const product = await ProductModel.findById(id);
+  async getProductById(id: string, includeInactive = false): Promise<IProduct> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw AppError.badRequest('Invalid product ID');
+    }
+
+    const filter: Record<string, unknown> = { _id: id };
+    if (!includeInactive) {
+      filter.isActive = true;
+    }
+
+    const product = await ProductModel.findOne(filter);
     if (!product) {
       throw AppError.notFound('Product');
     }
@@ -148,6 +160,10 @@ export class ProductService {
    * Update an existing product.
    */
   async updateProduct(id: string, input: UpdateProductInput): Promise<IProduct> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw AppError.badRequest('Invalid product ID');
+    }
+
     const product = await ProductModel.findByIdAndUpdate(
       id,
       { $set: input },
@@ -166,6 +182,10 @@ export class ProductService {
    * Soft-delete a product by setting isActive to false.
    */
   async deleteProduct(id: string): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw AppError.badRequest('Invalid product ID');
+    }
+
     const product = await ProductModel.findByIdAndUpdate(
       id,
       { isActive: false },
@@ -185,6 +205,153 @@ export class ProductService {
   async getCategories(): Promise<string[]> {
     const categories = await ProductModel.distinct('category', { isActive: true });
     return categories.sort();
+  }
+
+  /**
+   * Atomically adjust variant inventory in MongoDB.
+   * Decrements require stock to be >= quantityDelta (never negative).
+   * Increments (restocks) increase stock and ensure isAvailable is set to true.
+   */
+  async adjustVariantInventory(
+    sku: string,
+    quantityDelta: number,
+    session?: mongoose.ClientSession | null
+  ): Promise<{
+    success: boolean;
+    sku: string;
+    previousInventory: number;
+    newInventory: number;
+    error?: 'INSUFFICIENT_STOCK' | 'VARIANT_NOT_FOUND';
+    product: IProduct | null;
+  }> {
+    const upperSku = sku.toUpperCase();
+
+    if (quantityDelta === 0) {
+      const product = await ProductModel.findOne({ 'variants.sku': upperSku });
+      const variant = product?.variants.find((v) => v.sku.toUpperCase() === upperSku);
+      return {
+        success: true,
+        sku: upperSku,
+        previousInventory: variant ? variant.inventory : 0,
+        newInventory: variant ? variant.inventory : 0,
+        product,
+      };
+    }
+
+    if (quantityDelta < 0) {
+      const required = Math.abs(quantityDelta);
+      const updateOptions: mongoose.QueryOptions = { new: true };
+      if (session) updateOptions.session = session;
+
+      // Conditional atomic decrement: matched document must have inventory >= required for that exact variant
+      const updatedProduct = await ProductModel.findOneAndUpdate(
+        {
+          variants: {
+            $elemMatch: {
+              sku: upperSku,
+              inventory: { $gte: required },
+            },
+          },
+        },
+        {
+          $inc: { 'variants.$.inventory': quantityDelta },
+        },
+        updateOptions
+      );
+
+      if (!updatedProduct) {
+        // Document didn't match: check if variant exists but has insufficient inventory
+        const existing = await ProductModel.findOne({ 'variants.sku': upperSku });
+        if (!existing) {
+          return {
+            success: false,
+            sku: upperSku,
+            previousInventory: 0,
+            newInventory: 0,
+            error: 'VARIANT_NOT_FOUND',
+            product: null,
+          };
+        }
+
+        const variant = existing.variants.find((v) => v.sku.toUpperCase() === upperSku);
+        const currentInventory = variant ? variant.inventory : 0;
+        return {
+          success: false,
+          sku: upperSku,
+          previousInventory: currentInventory,
+          newInventory: currentInventory,
+          error: 'INSUFFICIENT_STOCK',
+          product: existing,
+        };
+      }
+
+      // Check remaining stock and update isAvailable if depleted
+      const variant = updatedProduct.variants.find((v) => v.sku.toUpperCase() === upperSku);
+      const newInventory = variant ? variant.inventory : 0;
+      if (newInventory === 0 && variant?.isAvailable) {
+        await ProductModel.updateOne(
+          { variants: { $elemMatch: { sku: upperSku } } },
+          { $set: { 'variants.$.isAvailable': false } },
+          session ? { session } : {}
+        );
+        variant.isAvailable = false;
+      }
+
+      logger.info('Variant inventory atomically decremented', {
+        sku: upperSku,
+        delta: quantityDelta,
+        newInventory,
+      });
+
+      return {
+        success: true,
+        sku: upperSku,
+        previousInventory: newInventory + required,
+        newInventory,
+        product: updatedProduct,
+      };
+    } else {
+      // Restock: increment stock and ensure isAvailable is true
+      const updateOptions: mongoose.QueryOptions = { new: true };
+      if (session) updateOptions.session = session;
+
+      const updatedProduct = await ProductModel.findOneAndUpdate(
+        { variants: { $elemMatch: { sku: upperSku } } },
+        {
+          $inc: { 'variants.$.inventory': quantityDelta },
+          $set: { 'variants.$.isAvailable': true },
+        },
+        updateOptions
+      );
+
+      if (!updatedProduct) {
+        return {
+          success: false,
+          sku: upperSku,
+          previousInventory: 0,
+          newInventory: 0,
+          error: 'VARIANT_NOT_FOUND',
+          product: null,
+        };
+      }
+
+      const variant = updatedProduct.variants.find((v) => v.sku.toUpperCase() === upperSku);
+      const newInventory = variant ? variant.inventory : 0;
+
+      logger.info('Variant inventory atomically incremented', {
+        sku: upperSku,
+        delta: quantityDelta,
+        newInventory,
+      });
+
+      return {
+        success: true,
+        sku: upperSku,
+        previousInventory: newInventory - quantityDelta,
+        newInventory,
+        product: updatedProduct,
+      };
+    }
   }
 }
 

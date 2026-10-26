@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app';
 import { ProductModel } from '../models';
+import { signToken } from '../middleware';
 
 const app = createApp();
+
+const adminToken = signToken({ id: 'admin-test-id', role: 'admin', email: 'admin@vetu.com' });
+const userToken = signToken({ id: 'user-test-id', role: 'user', email: 'customer@vetu.com' });
 
 const validProduct = {
   name: 'Test Product',
@@ -35,9 +39,31 @@ describe('Product API', () => {
   // ─── POST /api/products ───────────────────────────────
 
   describe('POST /api/products', () => {
-    it('should create a product with valid data', async () => {
+    it('should reject unauthenticated request with 401', async () => {
       const res = await request(app)
         .post('/api/products')
+        .send(validProduct)
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('should reject non-admin user request with 403', async () => {
+      const res = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send(validProduct)
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('should create a product with valid data when authorized as admin', async () => {
+      const res = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(validProduct)
         .expect(201);
 
@@ -52,6 +78,7 @@ describe('Product API', () => {
       const product = { ...validProduct, slug: undefined, name: 'My Great Product' };
       const res = await request(app)
         .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(product)
         .expect(201);
 
@@ -62,6 +89,7 @@ describe('Product API', () => {
       const product = { ...validProduct, variants: [] };
       const res = await request(app)
         .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(product)
         .expect(400);
 
@@ -73,6 +101,7 @@ describe('Product API', () => {
       const product = { ...validProduct, name: '' };
       const res = await request(app)
         .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(product)
         .expect(400);
 
@@ -86,6 +115,7 @@ describe('Product API', () => {
       };
       const res = await request(app)
         .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(product)
         .expect(400);
 
@@ -102,6 +132,7 @@ describe('Product API', () => {
       };
       const res = await request(app)
         .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(product)
         .expect(400);
 
@@ -109,10 +140,15 @@ describe('Product API', () => {
     });
 
     it('should reject duplicate slugs', async () => {
-      await request(app).post('/api/products').send(validProduct).expect(201);
+      await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(validProduct)
+        .expect(201);
 
       const res = await request(app)
         .post('/api/products')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(validProduct)
         .expect(409);
 
@@ -208,7 +244,7 @@ describe('Product API', () => {
   // ─── GET /api/products/:id ────────────────────────────
 
   describe('GET /api/products/:id', () => {
-    it('should return a product by ID', async () => {
+    it('should return an active product by ID for public request', async () => {
       const created = await ProductModel.create(validProduct);
       const res = await request(app)
         .get(`/api/products/${created.id}`)
@@ -218,7 +254,64 @@ describe('Product API', () => {
       expect(res.body.data.name).toBe('Test Product');
     });
 
-    it('should return 404 for non-existent product', async () => {
+    it('should return 404 for an inactive product on public request', async () => {
+      const inactive = await ProductModel.create({
+        ...validProduct,
+        slug: 'inactive-product',
+        isActive: false,
+      });
+
+      const res = await request(app)
+        .get(`/api/products/${inactive.id}`)
+        .expect(404);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('should return 404 for an inactive product even if non-admin specifies includeInactive=true', async () => {
+      const inactive = await ProductModel.create({
+        ...validProduct,
+        slug: 'inactive-product-nonadmin',
+        isActive: false,
+      });
+
+      const res = await request(app)
+        .get(`/api/products/${inactive.id}?includeInactive=true`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(404);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('should allow authorized admin to retrieve inactive product with includeInactive=true', async () => {
+      const inactive = await ProductModel.create({
+        ...validProduct,
+        slug: 'inactive-product-admin',
+        isActive: false,
+      });
+
+      const res = await request(app)
+        .get(`/api/products/${inactive.id}?includeInactive=true`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.slug).toBe('inactive-product-admin');
+      expect(res.body.data.isActive).toBe(false);
+    });
+
+    it('should return 400 for invalid/malformed product ID format', async () => {
+      const res = await request(app)
+        .get('/api/products/not-a-valid-object-id')
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('BAD_REQUEST');
+    });
+
+    it('should return 404 for non-existent valid ObjectId', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
       const res = await request(app)
         .get(`/api/products/${fakeId}`)
@@ -249,40 +342,114 @@ describe('Product API', () => {
     });
   });
 
-  // ─── PATCH /api/products/:id ──────────────────────────
+  // ─── PATCH /api/products/:id (Admin Only) ───────────────
 
   describe('PATCH /api/products/:id', () => {
-    it('should update a product', async () => {
+    it('should reject unauthenticated request with 401', async () => {
       const created = await ProductModel.create(validProduct);
       const res = await request(app)
         .patch(`/api/products/${created.id}`)
+        .send({ name: 'Updated Product' })
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('should reject non-admin user request with 403', async () => {
+      const created = await ProductModel.create(validProduct);
+      const res = await request(app)
+        .patch(`/api/products/${created.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ name: 'Updated Product' })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('should update a product when authorized as admin', async () => {
+      const created = await ProductModel.create(validProduct);
+      const res = await request(app)
+        .patch(`/api/products/${created.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Updated Product' })
         .expect(200);
 
       expect(res.body.data.name).toBe('Updated Product');
     });
 
+    it('should return 400 when updating with invalid product ID', async () => {
+      const res = await request(app)
+        .patch('/api/products/invalid-id')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Nope' })
+        .expect(400);
+
+      expect(res.body.error.code).toBe('BAD_REQUEST');
+    });
+
     it('should return 404 when updating non-existent product', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
       await request(app)
         .patch(`/api/products/${fakeId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Nope' })
         .expect(404);
     });
   });
 
-  // ─── DELETE /api/products/:id ─────────────────────────
+  // ─── DELETE /api/products/:id (Admin Only) ─────────────
 
   describe('DELETE /api/products/:id', () => {
-    it('should soft-delete a product', async () => {
+    it('should reject unauthenticated request with 401', async () => {
+      const created = await ProductModel.create(validProduct);
+      const res = await request(app)
+        .delete(`/api/products/${created.id}`)
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('should reject non-admin user request with 403', async () => {
+      const created = await ProductModel.create(validProduct);
+      const res = await request(app)
+        .delete(`/api/products/${created.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('should soft-delete a product when authorized as admin', async () => {
       const created = await ProductModel.create(validProduct);
       await request(app)
         .delete(`/api/products/${created.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(204);
 
-      // Verify soft delete
+      // Verify soft delete in database
       const product = await ProductModel.findById(created.id);
       expect(product?.isActive).toBe(false);
+    });
+
+    it('should return 400 when deleting with invalid product ID', async () => {
+      const res = await request(app)
+        .delete('/api/products/invalid-id')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+
+      expect(res.body.error.code).toBe('BAD_REQUEST');
+    });
+
+    it('should return 404 when deleting non-existent product', async () => {
+      const fakeId = '507f1f77bcf86cd799439011';
+      await request(app)
+        .delete(`/api/products/${fakeId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
     });
   });
 

@@ -13,3 +13,24 @@ declare module 'checkout/CheckoutApp' {
   const CheckoutApp: React.ComponentType;
   export default CheckoutApp;
 }
+
+declare module '*.jpg' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.png' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.webp' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.svg' {
+  const content: string;
+  export default content;
+}
+

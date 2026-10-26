@@ -1,0 +1,505 @@
+/* ═══════════════════════════════════════════════════════════
+   VÊTU — Cinematic Fashion Hero Styles
+   Phase 1 Simplified Architecture: Direction A (Minimal Editorial Luxury)
+   Single Primary Animation: Smooth Scroll-Driven Media Expansion
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Sticky Scroll Track ────────────────────────────────── */
+
+.cinematic-hero-track {
+  position: relative;
+  width: 100%;
+  height: 160vh; /* Controlled track distance for gradual media expansion */
+  background-color: var(--color-bg, #F7F5F0);
+  margin: 0;
+  padding: 0;
+  outline: none;
+
+  /* Default CSS Custom Properties (driven by RAF without React re-renders) */
+  --hero-progress: 0;
+  --hero-width: 88%;
+  --hero-height: 74%;
+  --hero-max-width: 1540px;
+  --hero-radius: 12px;
+  --hero-scrim-opacity: 0.22;
+  --hero-cue-opacity: 1;
+}
+
+.cinematic-hero-track--reduced {
+  height: auto;
+  min-height: 85vh;
+}
+
+/* ─── Sticky Viewport Stage ──────────────────────────────── */
+/* Sticks precisely below the site header without overlap or blank gaps */
+/* contain: layout paint guarantees dimension changes never trigger full-page reflow */
+
+.cinematic-hero-sticky {
+  position: sticky;
+  top: var(--header-total-height, 104px);
+  width: 100%;
+  height: calc(100vh - var(--header-total-height, 104px));
+  height: calc(100dvh - var(--header-total-height, 104px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: var(--color-bg, #F7F5F0);
+  padding: 1rem 0;
+  box-sizing: border-box;
+  contain: layout paint;
+}
+
+.cinematic-hero-track--reduced .cinematic-hero-sticky {
+  position: relative;
+  top: auto;
+  height: auto;
+  min-height: calc(85vh - var(--header-total-height, 104px));
+  padding: 2rem 1.5rem;
+  contain: none;
+}
+
+/* ─── Expanding Media Frame (Single Primary Animation) ───── */
+
+.cinematic-hero-media-wrapper {
+  position: relative;
+  overflow: hidden;
+  width: var(--hero-width, 88%);
+  max-width: var(--hero-max-width, 1540px);
+  height: var(--hero-height, 74%);
+  border-radius: var(--hero-radius, 12px);
+  background-color: var(--color-deep-green, #0B241B);
+  box-shadow: 0 20px 50px rgba(18, 55, 43, 0.12);
+  display: flex;
+  align-items: center;
+  will-change: width, height, border-radius;
+}
+
+/* ─── Media Photography ──────────────────────────────────── */
+
+.cinematic-hero-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cinematic-hero-picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cinematic-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 68% center;
+  display: block;
+}
+
+/* ─── Gradient Scrim Overlay ────────────────────────────── */
+
+.cinematic-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(11, 36, 27, 0.88) 0%,
+    rgba(11, 36, 27, 0.65) 45%,
+    rgba(11, 36, 27, 0.2) 78%,
+    rgba(11, 36, 27, 0.45) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  opacity: var(--hero-scrim-opacity, 0.22);
+  transition: opacity 0.1s linear;
+}
+
+/* ─── Editorial Typography Content ───────────────────────── */
+
+.cinematic-hero-content {
+  position: relative;
+  z-index: 3;
+  padding: 3rem 4rem;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  color: #FFFFFF;
+}
+
+/* 1. Eyebrow Line */
+.cinematic-hero-eyebrow-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.cinematic-hero-eyebrow {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #C9BBA7;
+  display: inline-block;
+}
+
+.cinematic-hero-eyebrow-sep {
+  color: rgba(201, 187, 167, 0.5);
+  font-size: 0.85rem;
+}
+
+.cinematic-hero-eyebrow-tag {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(247, 245, 240, 0.75);
+}
+
+/* 2. Editorial Headline */
+.cinematic-hero-headline {
+  font-family: var(--font-display, 'DM Serif Display', serif);
+  font-size: clamp(2.5rem, 4.6vw, 4.2rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  color: #FFFFFF;
+  margin-bottom: 1.25rem;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cinematic-hero-headline-em {
+  font-style: italic;
+  font-family: var(--font-display, 'DM Serif Display', serif);
+  color: #F7F5F0;
+}
+
+/* 3. Supporting Paragraph */
+.cinematic-hero-copy {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: clamp(0.95rem, 1.15vw, 1.0625rem);
+  line-height: 1.6;
+  color: rgba(247, 245, 240, 0.9);
+  max-width: 500px;
+  margin-bottom: 1.75rem;
+}
+
+/* 4. Action Buttons */
+.cinematic-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.cinematic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.65rem;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.cinematic-btn:focus-visible {
+  outline: 2px solid #C9BBA7;
+  outline-offset: 3px;
+}
+
+.cinematic-btn--primary {
+  background-color: #F7F5F0;
+  color: #12372B;
+  border: 1px solid #F7F5F0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.cinematic-btn--primary:hover {
+  background-color: #FFFFFF;
+  color: #0B241B;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cinematic-btn--primary svg {
+  transition: transform 0.25s ease;
+}
+
+.cinematic-btn--primary:hover svg {
+  transform: translateX(4px);
+}
+
+.cinematic-btn--ghost {
+  background-color: transparent;
+  color: rgba(247, 245, 240, 0.9);
+  border: 1px solid rgba(247, 245, 240, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.cinematic-btn--ghost:hover {
+  background-color: rgba(247, 245, 240, 0.12);
+  color: #FFFFFF;
+  border-color: rgba(247, 245, 240, 0.7);
+  transform: translateY(-2px);
+}
+
+/* 5. Editorial Stats Row */
+.cinematic-hero-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.cinematic-hero-stat-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cinematic-stat-number {
+  font-family: var(--font-display, 'DM Serif Display', serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.cinematic-stat-label {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: rgba(247, 245, 240, 0.65);
+}
+
+.cinematic-hero-stat-sep {
+  width: 1px;
+  height: 24px;
+  background-color: rgba(247, 245, 240, 0.2);
+}
+
+/* ─── Minimal Scroll Cue Indicator ───────────────────────── */
+
+.cinematic-hero-scroll-cue {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(247, 245, 240, 0.65);
+  pointer-events: none;
+  opacity: var(--hero-cue-opacity, 1);
+  transition: opacity 0.1s linear;
+}
+
+.cinematic-hero-scroll-text {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.cinematic-hero-scroll-line {
+  position: relative;
+  width: 40px;
+  height: 1px;
+  background-color: rgba(247, 245, 240, 0.25);
+  overflow: hidden;
+}
+
+.cinematic-hero-scroll-pip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 100%;
+  background-color: #C9BBA7;
+  animation: heroScrollPip 2.2s infinite ease-in-out;
+}
+
+@keyframes heroScrollPip {
+  0% {
+    transform: translateX(-15px);
+  }
+  50% {
+    transform: translateX(45px);
+  }
+  100% {
+    transform: translateX(-15px);
+  }
+}
+
+/* ─── Responsive Breakpoints ─────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .cinematic-hero-content {
+    padding: 2.75rem 3rem;
+    max-width: 580px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .cinematic-hero-content {
+    padding: 2.5rem 2.25rem;
+    max-width: 520px;
+  }
+
+  .cinematic-hero-headline {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .cinematic-hero-track {
+    height: 135vh;
+  }
+
+  .cinematic-hero-sticky {
+    top: var(--header-total-height, 98px);
+    height: calc(100vh - var(--header-total-height, 98px));
+    height: calc(100dvh - var(--header-total-height, 98px));
+    padding: 0.75rem 0;
+    contain: none;
+  }
+
+  /* Responsive media expansion on mobile: 94% -> 100% */
+  .cinematic-hero-media-wrapper {
+    width: var(--hero-width, 94%);
+    max-width: 100%;
+    height: var(--hero-height, 82%);
+    border-radius: var(--hero-radius, 8px);
+  }
+
+  .cinematic-hero-scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(11, 36, 27, 0.88) 0%,
+      rgba(11, 36, 27, 0.6) 35%,
+      rgba(11, 36, 27, 0.25) 65%,
+      rgba(11, 36, 27, 0.8) 100%
+    );
+  }
+
+  .cinematic-hero-image {
+    object-position: center 25%;
+  }
+
+  .cinematic-hero-content {
+    padding: 1.75rem 1.25rem;
+    max-width: 100%;
+  }
+
+  .cinematic-hero-eyebrow-wrapper {
+    margin-bottom: 0.75rem;
+  }
+
+  .cinematic-hero-eyebrow {
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+  }
+
+  .cinematic-hero-eyebrow-tag {
+    display: none; /* Keep eyebrow clean on mobile */
+  }
+
+  .cinematic-hero-eyebrow-sep {
+    display: none;
+  }
+
+  .cinematic-hero-headline {
+    font-size: 2.1rem;
+    line-height: 1.1;
+    margin-bottom: 0.85rem;
+  }
+
+  .cinematic-hero-copy {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 1.15rem;
+    max-width: 320px;
+  }
+
+  .cinematic-hero-actions {
+    flex-direction: row;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .cinematic-btn {
+    padding: 0.75rem 1.15rem;
+    font-size: 0.8125rem;
+  }
+
+  .cinematic-hero-stats-row {
+    gap: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .cinematic-stat-number {
+    font-size: 1rem;
+  }
+
+  .cinematic-hero-scroll-cue {
+    display: none;
+  }
+}
+
+@media (max-width: 390px) {
+  .cinematic-hero-headline {
+    font-size: 1.95rem;
+  }
+
+  .cinematic-hero-stats-row {
+    display: none;
+  }
+}
+
+/* ─── Reduced Motion Support ─────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-hero-track {
+    height: auto !important;
+  }
+
+  .cinematic-hero-sticky {
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
+    min-height: calc(80vh - var(--header-total-height, 104px));
+    contain: none !important;
+    padding: 0 !important;
+  }
+
+  .cinematic-hero-media-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 75vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .cinematic-hero-scroll-cue {
+    display: none !important;
+  }
+}

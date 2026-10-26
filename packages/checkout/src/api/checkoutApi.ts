@@ -20,6 +20,17 @@ export interface OrderItem {
   quantity: number;
 }
 
+export interface PaymentDetails {
+  provider: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  currency?: string;
+  amountPaise?: number;
+  paymentIntentId?: string;
+  clientSecret?: string;
+}
+
 export interface OrderResponse {
   success: boolean;
   data: {
@@ -33,13 +44,16 @@ export interface OrderResponse {
     total: number;
     status: string;
     paymentStatus: string;
-    paymentDetails: {
-      provider: string;
-      paymentIntentId?: string;
-      clientSecret?: string;
-    };
+    paymentDetails: PaymentDetails;
+    razorpayKeyId?: string;
     createdAt: string;
   };
+}
+
+export interface VerifyPaymentInput {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
 }
 
 export function getSessionId(): string {
@@ -87,13 +101,31 @@ export async function createOrder(shippingAddress: ShippingAddressInput): Promis
   });
 }
 
-export async function confirmPayment(paymentIntentId: string): Promise<OrderResponse> {
-  return apiFetch<OrderResponse>('/orders/payments/confirm', {
+export async function verifyPayment(params: VerifyPaymentInput): Promise<OrderResponse> {
+  return apiFetch<OrderResponse>('/orders/payments/verify', {
     method: 'POST',
-    body: JSON.stringify({ paymentIntentId }),
+    body: JSON.stringify(params),
   });
 }
 
 export async function fetchOrder(orderNumber: string): Promise<OrderResponse> {
   return apiFetch<OrderResponse>(`/orders/${orderNumber}`);
+}
+
+/**
+ * Dynamically load Razorpay standard checkout script
+ */
+export function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }

@@ -1,5 +1,5 @@
 import { createApp } from './app';
-import { config } from './config';
+import { config, validateJwtConfig } from './config';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { connectRedis, disconnectRedis } from './config/redis';
 import { initInventoryEventConsumer } from './events/inventoryEvents';
@@ -7,6 +7,9 @@ import { logger } from './utils/logger';
 
 async function bootstrap(): Promise<void> {
   try {
+    // Validate security configuration
+    validateJwtConfig(config.env, config.jwt.secret);
+
     // Connect to databases
     await connectDatabase();
     await connectRedis();

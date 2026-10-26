@@ -23,14 +23,22 @@ services:
     image: redis:7.2-alpine
     container_name: ecommerce-redis
     restart: unless-stopped
+    command: >
+      sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
+        redis-server --requirepass "$$REDIS_PASSWORD";
+      else
+        redis-server;
+      fi'
     ports:
       - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "if [ -n \"$$REDIS_PASSWORD\" ]; then redis-cli -a \"$$REDIS_PASSWORD\" ping; else redis-cli ping; fi"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,7 +55,8 @@ services:
       NODE_ENV: production
       API_PORT: 4000
       MONGODB_URI: mongodb://mongodb:27017/ecommerce
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       SHELL_URL: http://localhost:3000
       CATALOG_URL: http://localhost:3001
     depends_on:

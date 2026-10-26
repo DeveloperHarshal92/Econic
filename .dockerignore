@@ -1,2 +1,62 @@
-node_modules
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs & Cache
+dist/
+**/dist/
+build/
+**/build/
+*.tsbuildinfo
+.turbo/
+.cache/
+
+# Environment & Secrets
 .env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+
+# Git & GitHub
+.git/
+.github/
+.gitignore
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+docs
+
+# OS & Filesystem
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Documentation & Agent Configs
+README.md
+docs/
+.agents/
+.claude/
+.gemini/
+
+# Docker Files (Avoid recursive contexts)
+docker-compose*.yml
+.dockerignore
+**/Dockerfile*

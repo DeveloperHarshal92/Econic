@@ -24,7 +24,13 @@ const CreateOrderSchema = z.object({
   idempotencyKey: z.string().optional(),
 });
 
-// POST /api/orders - Create order from cart
+const VerifyPaymentSchema = z.object({
+  razorpay_order_id: z.string({ required_error: 'razorpay_order_id is required' }).min(1, 'razorpay_order_id cannot be empty'),
+  razorpay_payment_id: z.string({ required_error: 'razorpay_payment_id is required' }).min(1, 'razorpay_payment_id cannot be empty'),
+  razorpay_signature: z.string({ required_error: 'razorpay_signature is required' }).min(1, 'razorpay_signature cannot be empty'),
+});
+
+// POST /api/orders - Create order from cart and initialize Razorpay order
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = (req.headers['x-cart-session'] as string) || req.body?.sessionId;
@@ -42,7 +48,12 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       idempotencyKey,
     });
 
-    res.status(201).json({ success: true, data: order });
+    const responseData = {
+      ...order.toJSON(),
+      razorpayKeyId: config.razorpay.keyId,
+    };
+
+    res.status(201).json({ success: true, data: responseData });
   } catch (err) {
     next(err);
   }
@@ -59,28 +70,38 @@ router.get('/:orderNumber', async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-// POST /api/orders/payments/confirm - Direct test confirmation endpoint
-router.post('/payments/confirm', async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/orders/payments/verify - Secure Razorpay payment verification
+router.post('/payments/verify', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { paymentIntentId } = req.body;
-    if (!paymentIntentId) {
-      throw new AppError('paymentIntentId is required', 400);
-    }
+    const validated = VerifyPaymentSchema.parse(req.body);
+    const order = await orderService.verifyPaymentAndConfirmOrder({
+      razorpayOrderId: validated.razorpay_order_id,
+      razorpayPaymentId: validated.razorpay_payment_id,
+      razorpaySignature: validated.razorpay_signature,
+    });
 
-    const order = await orderService.confirmOrderPayment(paymentIntentId);
     res.json({ success: true, data: order });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/orders/payments/webhook - Validated payment webhook handler
+// POST /api/orders/payments/confirm - Obsolete simulated endpoint disabled for security
+router.post('/payments/confirm', (_req: Request, _res: Response, next: NextFunction) => {
+  next(
+    new AppError(
+      'Simulated payment confirmation endpoint is disabled. Use /api/orders/payments/verify with authentic Razorpay payment response.',
+      400
+    )
+  );
+});
+
+// POST /api/orders/payments/webhook - Legacy webhook handler (webhooks integrated separately later)
 router.post('/payments/webhook', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sigHeader = req.headers['stripe-signature'] as string;
     const webhookSecret = config.stripe.webhookSecret;
 
-    // Verify webhook signature when secret is configured
     if (webhookSecret && sigHeader) {
       const parts = sigHeader.split(',').reduce((acc, curr) => {
         const [k, v] = curr.split('=');
@@ -99,19 +120,6 @@ router.post('/payments/webhook', async (req: Request, res: Response, next: NextF
 
       if (signature !== expectedSignature) {
         throw new AppError('Invalid webhook signature', 400);
-      }
-    }
-
-    const event = req.body;
-    const eventId = event?.id || 'evt_' + Math.random().toString(36).substring(2, 10);
-    const eventType = event?.type;
-
-    logger.info('Processing payment webhook', { eventId, eventType });
-
-    if (eventType === 'payment_intent.succeeded') {
-      const paymentIntentId = event.data?.object?.id;
-      if (paymentIntentId) {
-        await orderService.confirmOrderPayment(paymentIntentId, eventId);
       }
     }
 

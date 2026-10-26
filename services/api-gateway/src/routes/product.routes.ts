@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { asyncHandler, AppError } from '../middleware';
+import { asyncHandler, AppError, requireAdmin, getOptionalAuth } from '../middleware';
 import { productService } from '../services/product.service';
+import { logger } from '../utils/logger';
 import {
   createProductSchema,
   updateProductSchema,
@@ -75,7 +76,15 @@ router.get(
 router.get(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const product = await productService.getProductById(req.params.id!);
+    let includeInactive = false;
+    if (req.query.includeInactive === 'true') {
+      const authUser = getOptionalAuth(req);
+      if (authUser && authUser.role === 'admin') {
+        includeInactive = true;
+      }
+    }
+
+    const product = await productService.getProductById(req.params.id!, includeInactive);
     res.json({
       success: true,
       data: product,
@@ -83,13 +92,20 @@ router.get(
   }),
 );
 
-// ─── POST /api/products ─────────────────────────────────
+// ─── POST /api/products (Admin Only) ────────────────────
 
 router.post(
   '/',
+  requireAdmin,
   asyncHandler(async (req: Request, res: Response) => {
     const input = validate(createProductSchema, req.body);
     const product = await productService.createProduct(input);
+
+    logger.info('Product created by admin', {
+      adminId: req.user?.id,
+      productId: product.id,
+      name: product.name,
+    });
 
     res.status(201).json({
       success: true,
@@ -98,13 +114,19 @@ router.post(
   }),
 );
 
-// ─── PATCH /api/products/:id ────────────────────────────
+// ─── PATCH /api/products/:id (Admin Only) ───────────────
 
 router.patch(
   '/:id',
+  requireAdmin,
   asyncHandler(async (req: Request, res: Response) => {
     const input = validate(updateProductSchema, req.body);
     const product = await productService.updateProduct(req.params.id!, input);
+
+    logger.info('Product updated by admin', {
+      adminId: req.user?.id,
+      productId: product.id,
+    });
 
     res.json({
       success: true,
@@ -113,12 +135,19 @@ router.patch(
   }),
 );
 
-// ─── DELETE /api/products/:id ───────────────────────────
+// ─── DELETE /api/products/:id (Admin Only) ──────────────
 
 router.delete(
   '/:id',
+  requireAdmin,
   asyncHandler(async (req: Request, res: Response) => {
     await productService.deleteProduct(req.params.id!);
+
+    logger.info('Product soft-deleted by admin', {
+      adminId: req.user?.id,
+      productId: req.params.id,
+    });
+
     res.status(204).send();
   }),
 );

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { CartModel, ICart, ProductModel } from '../models';
 import { AppError } from '../middleware/error.middleware';
 import { publishInventoryEvent, INVENTORY_CHANNELS } from '../events/inventoryEvents';
@@ -174,10 +175,10 @@ export class CartService {
   /**
    * Clear all items from cart
    */
-  async clearCart(sessionId: string): Promise<ICart> {
+  async clearCart(sessionId: string, session?: mongoose.ClientSession | null): Promise<ICart> {
     const cart = await this.getOrCreateCart(sessionId);
     cart.items = [];
-    await cart.save();
+    await cart.save(session ? { session } : {});
     logger.info('Cart cleared', { sessionId });
     return cart;
   }

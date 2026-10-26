@@ -30,9 +30,9 @@ ENV API_PORT=4000
 
 COPY package.json ./
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY services/api-gateway/package.json ./services/api-gateway/
-COPY services/api-gateway/dist ./services/api-gateway/dist
+COPY --from=builder /app/services/api-gateway/dist ./services/api-gateway/dist
 
 RUN npm install --omit=dev --workspace=packages/shared --workspace=services/api-gateway
 
