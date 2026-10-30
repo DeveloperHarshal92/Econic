@@ -10,7 +10,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].[contenthash:8].js',
-    publicPath: 'auto',
+    publicPath: '/',
     clean: true,
   },
   resolve: {
@@ -40,9 +40,9 @@ module.exports = {
     new ModuleFederationPlugin({
       name: 'shell',
       remotes: {
-        catalog: `catalog@${process.env.CATALOG_URL || 'http://localhost:3001'}/remoteEntry.js`,
-        cart: `cart@${process.env.CART_URL || 'http://localhost:3002'}/remoteEntry.js`,
-        checkout: `checkout@${process.env.CHECKOUT_URL || 'http://localhost:3003'}/remoteEntry.js`,
+        catalog: `catalog@${process.env.CATALOG_URL || '/remote/catalog'}/remoteEntry.js`,
+        cart: `cart@${process.env.CART_URL || '/remote/cart'}/remoteEntry.js`,
+        checkout: `checkout@${process.env.CHECKOUT_URL || '/remote/checkout'}/remoteEntry.js`,
       },
       shared: {
         react: { singleton: true, requiredVersion: '^18.2.0', eager: true },
@@ -53,6 +53,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './src/index.html',
       title: 'VÊTU — Premium E-Commerce',
+      publicPath: '/',
       favicon: false,
     }),
     ...(isProd ? [new MiniCssExtractPlugin({ filename: '[name].[contenthash:8].css' })] : []),
@@ -68,6 +69,24 @@ module.exports = {
       {
         context: ['/api'],
         target: process.env.API_URL || 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      {
+        context: ['/remote/catalog'],
+        target: process.env.CATALOG_DEV_SERVER || 'http://localhost:3001',
+        pathRewrite: { '^/remote/catalog': '' },
+        changeOrigin: true,
+      },
+      {
+        context: ['/remote/cart'],
+        target: process.env.CART_DEV_SERVER || 'http://localhost:3002',
+        pathRewrite: { '^/remote/cart': '' },
+        changeOrigin: true,
+      },
+      {
+        context: ['/remote/checkout'],
+        target: process.env.CHECKOUT_DEV_SERVER || 'http://localhost:3003',
+        pathRewrite: { '^/remote/checkout': '' },
         changeOrigin: true,
       },
     ],

@@ -28,6 +28,8 @@
   align-items: center;
   justify-content: space-between;
   text-transform: uppercase;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .announcement-bar__item {
@@ -73,6 +75,8 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   width: 100%;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   gap: var(--space-4);
 }
 

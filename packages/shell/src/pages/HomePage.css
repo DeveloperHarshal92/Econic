@@ -472,7 +472,7 @@
   gap: 1.75rem;
 }
 
-.product-card {
+.products-section .product-card {
   display: flex;
   flex-direction: column;
   background-color: var(--color-white);
@@ -499,7 +499,7 @@
 .products-section--revealed .product-card:nth-child(3) { transition-delay: 120ms; }
 .products-section--revealed .product-card:nth-child(4) { transition-delay: 180ms; }
 
-.product-card:hover {
+.products-section .product-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-3px);
 }

@@ -52,6 +52,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './src/index.html',
       title: 'Cart — VÊTU',
+      publicPath: '/',
     }),
     ...(isProd ? [new MiniCssExtractPlugin({ filename: '[name].[contenthash:8].css' })] : []),
   ],

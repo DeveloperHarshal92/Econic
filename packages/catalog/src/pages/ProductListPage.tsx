@@ -90,7 +90,11 @@ const ProductListPage: React.FC = () => {
           </h1>
           {meta && (
             <p className="product-list__count">
-              Showing {meta.total} {meta.total === 1 ? 'curated piece' : 'curated pieces'}
+              {meta.total === 0
+                ? '0 curated pieces'
+                : meta.totalPages > 1
+                ? `Showing ${(meta.page - 1) * meta.limit + 1}–${Math.min(meta.page * meta.limit, meta.total)} of ${meta.total} curated pieces`
+                : `Showing ${meta.total} ${meta.total === 1 ? 'curated piece' : 'curated pieces'}`}
             </p>
           )}
         </div>

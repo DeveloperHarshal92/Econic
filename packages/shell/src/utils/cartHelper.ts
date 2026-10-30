@@ -64,6 +64,7 @@ export async function addToCart(payload: AddToCartPayload): Promise<CartResponse
         },
       })
     );
+    window.dispatchEvent(new CustomEvent('cart:refresh'));
   }
 
   return cartData;

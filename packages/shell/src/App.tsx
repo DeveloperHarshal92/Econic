@@ -7,10 +7,31 @@ import LoadingFallback from './components/LoadingFallback';
 import HomePage from './pages/HomePage';
 import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
 
-// Lazy-load Module Federation remotes
-const CatalogApp = lazy(() => import('catalog/CatalogApp'));
-const CartApp = lazy(() => import('cart/CartApp'));
-const CheckoutApp = lazy(() => import('checkout/CheckoutApp'));
+// Resilient lazy loader for Module Federation remotes
+function retryLazy<T extends React.ComponentType<any>>(
+  fn: () => Promise<{ default: T }>,
+  retries = 2,
+  interval = 800
+): Promise<{ default: T }> {
+  return new Promise((resolve, reject) => {
+    fn()
+      .then(resolve)
+      .catch((error) => {
+        if (retries <= 0) {
+          reject(error);
+          return;
+        }
+        setTimeout(() => {
+          retryLazy(fn, retries - 1, interval).then(resolve, reject);
+        }, interval);
+      });
+  });
+}
+
+// Lazy-load Module Federation remotes with resilience
+const CatalogApp = lazy(() => retryLazy(() => import('catalog/CatalogApp')));
+const CartApp = lazy(() => retryLazy(() => import('cart/CartApp')));
+const CheckoutApp = lazy(() => retryLazy(() => import('checkout/CheckoutApp')));
 
 const App: React.FC = () => {
   return (

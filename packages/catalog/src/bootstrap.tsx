@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import CatalogApp from './CatalogApp';
 
 // Standalone bootstrap for independent development
@@ -10,7 +10,10 @@ if (rootEl) {
   root.render(
     <React.StrictMode>
       <BrowserRouter>
-        <CatalogApp />
+        <Routes>
+          <Route path="/catalog/*" element={<CatalogApp />} />
+          <Route path="/*" element={<CatalogApp />} />
+        </Routes>
       </BrowserRouter>
     </React.StrictMode>,
   );

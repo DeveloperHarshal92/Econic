@@ -13,6 +13,7 @@ const CatalogApp: React.FC = () => {
     <div className="catalog-mfe">
       <Routes>
         <Route index element={<ProductListPage />} />
+        <Route path="products/:id" element={<ProductDetailPage />} />
         <Route path=":slug" element={<ProductDetailPage />} />
       </Routes>
     </div>

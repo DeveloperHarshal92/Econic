@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:7.0
@@ -30,7 +28,7 @@ services:
         redis-server;
       fi'
     ports:
-      - "6379:6379"
+      - "11173:11173"
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     volumes:
@@ -55,8 +53,8 @@ services:
       NODE_ENV: production
       API_PORT: 4000
       MONGODB_URI: mongodb://mongodb:27017/ecommerce
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_URL: redis://default:eycHYx9VIHSuoonOb4pap3AvUMsLGJeG@redis-11173.c83.us-east-1-2.ec2.cloud.redislabs.com:11173
+      REDIS_PASSWORD: eycHYx9VIHSuoonOb4pap3AvUMsLGJeG
       SHELL_URL: http://localhost:3000
       CATALOG_URL: http://localhost:3001
     depends_on:

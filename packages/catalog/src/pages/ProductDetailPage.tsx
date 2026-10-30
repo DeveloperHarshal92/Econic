@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchProductBySlug, Product } from '../api/productApi';
+import { fetchProduct, Product } from '../api/productApi';
+import { addToCart } from '../api/cartApi';
 
 const FALLBACK_IMAGE =
   "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22600%22%20height%3D%22800%22%20viewBox%3D%220%200%20600%20800%22%3E%3Crect%20fill%3D%22%23EFECE6%22%20width%3D%22600%22%20height%3D%22800%22%2F%3E%3Ctext%20fill%3D%22%2377766F%22%20font-family%3D%22sans-serif%22%20font-size%3D%2224%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20text-anchor%3D%22middle%22%3EV%C3%8ATU%20COLLECTION%3C%2Ftext%3E%3C%2Fsvg%3E";
 
 const ProductDetailPage: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, id } = useParams<{ slug?: string; id?: string }>();
+  const identifier = id || slug;
+
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!identifier) return;
     setLoading(true);
     setError(null);
 
-    fetchProductBySlug(slug)
+    fetchProduct(identifier)
       .then((res) => {
         setProduct(res.data);
         setSelectedVariant(0);
@@ -29,7 +34,7 @@ const ProductDetailPage: React.FC = () => {
         setError(err instanceof Error ? err.message : 'Failed to load product');
       })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [identifier]);
 
   if (loading) {
     return (
@@ -209,20 +214,28 @@ const ProductDetailPage: React.FC = () => {
             <button
               type="button"
               className={`product-detail__add-to-cart ${added ? 'product-detail__add-to-cart--added' : ''}`}
-              disabled={!variant?.isAvailable || added}
-              onClick={() => {
-                if (!variant?.isAvailable || !product) return;
-                window.dispatchEvent(
-                  new CustomEvent('cart:add', {
-                    detail: {
-                      productId: product.id,
-                      variantSku: variant.sku,
-                      quantity: 1,
-                    },
-                  })
-                );
-                setAdded(true);
-                setTimeout(() => setAdded(false), 2200);
+              disabled={!variant?.isAvailable || added || addingToCart}
+              onClick={async () => {
+                if (!variant?.isAvailable || !product || added || addingToCart) return;
+                const pId = product.id || product._id;
+                if (!pId) return;
+
+                setAddingToCart(true);
+                setCartError(null);
+                try {
+                  await addToCart({
+                    productId: pId,
+                    variantSku: variant.sku,
+                    quantity: 1,
+                  });
+                  setAdded(true);
+                  setTimeout(() => setAdded(false), 2400);
+                } catch (err) {
+                  setCartError(err instanceof Error ? err.message : 'Could not add piece to bag');
+                  setTimeout(() => setCartError(null), 4000);
+                } finally {
+                  setAddingToCart(false);
+                }
               }}
               aria-label={`Add ${product.name} - ${variant?.name} to cart`}
             >
@@ -232,6 +245,11 @@ const ProductDetailPage: React.FC = () => {
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Added to Bag
+                </>
+              ) : addingToCart ? (
+                <>
+                  <span className="product-card__cart-spinner" />
+                  Adding...
                 </>
               ) : variant?.isAvailable ? (
                 <>
@@ -246,6 +264,11 @@ const ProductDetailPage: React.FC = () => {
                 'Sold Out'
               )}
             </button>
+            {cartError && (
+              <p className="product-detail__cart-error" role="alert" style={{ color: 'var(--catalog-danger)', fontSize: '0.8125rem', marginTop: '0.5rem' }}>
+                {cartError}
+              </p>
+            )}
           </div>
 
           {/* Narrative Description */}

@@ -30,6 +30,14 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = (): void => {
+    if (
+      this.state.error?.message?.includes('Loading script') ||
+      this.state.error?.message?.includes('dynamically imported module') ||
+      this.state.error?.name === 'ChunkLoadError'
+    ) {
+      window.location.reload();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   };
 

@@ -61,6 +61,7 @@ export interface PaginationMeta {
 
 export interface Product {
   id: string;
+  _id?: string;
   name: string;
   slug: string;
   description: string;
@@ -109,6 +110,31 @@ export function fetchProducts(params: ProductQueryParams = {}): Promise<ProductA
 
 export function fetchProductBySlug(slug: string): Promise<SingleProductResponse> {
   return apiFetch<SingleProductResponse>(`/products/slug/${slug}`);
+}
+
+export function fetchProductById(id: string): Promise<SingleProductResponse> {
+  return apiFetch<SingleProductResponse>(`/products/${id}`);
+}
+
+export async function fetchProduct(idOrSlug: string): Promise<SingleProductResponse> {
+  const isMongoId = /^[0-9a-fA-F]{24}$/.test(idOrSlug);
+  if (isMongoId) {
+    try {
+      return await fetchProductById(idOrSlug);
+    } catch {
+      return await fetchProductBySlug(idOrSlug);
+    }
+  }
+  try {
+    return await fetchProductBySlug(idOrSlug);
+  } catch (err) {
+    // If slug lookup failed, try ID as fallback
+    try {
+      return await fetchProductById(idOrSlug);
+    } catch {
+      throw err;
+    }
+  }
 }
 
 export function fetchCategories(): Promise<CategoriesResponse> {
